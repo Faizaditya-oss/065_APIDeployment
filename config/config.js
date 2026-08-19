@@ -10,7 +10,8 @@ const development = {
 };
 
 const production = {
-  use_env_variable: 'POSTGRES_URL',
+  // Prefer `DATABASE_URL` (common on many hosts), fall back to `POSTGRES_URL`
+  use_env_variable: process.env.DATABASE_URL ? 'DATABASE_URL' : (process.env.POSTGRES_URL ? 'POSTGRES_URL' : 'DATABASE_URL'),
   dialect: "postgres",
   dialectOptions: {
     ssl: {
