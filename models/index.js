@@ -11,10 +11,30 @@ const db = {};
 
 let sequelize;
 if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], config);
+  const connectionUrl = process.env[config.use_env_variable];
+
+  const url = new URL(connectionUrl);
+
+  url.searchParams.delete('sslmode');
+
+  sequelize = new Sequelize(url.toString(), {
+    dialect: config.dialect,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
+  });
 } else {
-  sequelize = new Sequelize(config.database, config.username, config.password, config);
+  sequelize = new Sequelize (
+    config.database, 
+    config.username, 
+    config.password,
+    config
+    );
 }
+
 
 fs
   .readdirSync(__dirname)
