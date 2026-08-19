@@ -1,21 +1,40 @@
-require('dotenv').config();
 const express = require('express');
-const db = require('./models');
-const apiRoutes = require('./routes/api');
-
 const app = express();
+const PORT = 3000;
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/api', apiRoutes);
+let databaseReady = false;
+let databasePromise = null;
 
-const PORT = process.env.PORT || 3000;
+app.use(async (req, res, next) => {
+    try{
+        if (!databaseReady) {
+            if (!databasePromise) {
+                databasePromise = connectToDatabase()
+            }
+            await databasePromise;
+            databaseReady = true;
+        }
+        next();
+    } catch (error) {
+        console.error('Error connecting to database:', error.message);
+        databasePromise = null;
+        return res.status(500).json({ 
+            message: 'Database Connection Error' });
+    }
 
-db.sequelize.sync({ alter: true }).then(() => {
-  console.log('Database terhubung dan tersinkronisasi.');
-  app.listen(PORT, () => {
-    console.log(`Server berjalan di http://localhost:${PORT}`);
-  });
-}).catch(err => {
-  console.error('Gagal menghubungkan ke database:', err);
+    app.use('/api', require('./routes/api'));
+
+    async function startServer() {
+        await connectToDatabase();
+        app.listen(PORT, () => {
+            console.log(`Server is running on http://localhost:${PORT}`);
+        });
+    }
 });
+
+
+startServer();
