@@ -2,8 +2,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const pg = require('pg');
 const Sequelize = require('sequelize');
+const pg = require("pg");
 const process = require('process');
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
@@ -11,39 +11,33 @@ const config = require(__dirname + '/../config/config.js')[env];
 const db = {};
 
 let sequelize;
+
 if (config.use_env_variable) {
   const connectionUrl = process.env[config.use_env_variable];
 
-  if (!connectionUrl) {
-    throw new Error(`Environment variable ${config.use_env_variable} is missing. Please set it in Vercel.`);
-  }
-
   const url = new URL(connectionUrl);
 
-  url.searchParams.delete('sslmode');
+  url.searchParams.delete("sslmode");
 
   sequelize = new Sequelize(url.toString(), {
-    dialect: config.dialect,
+    ...config,
+    dialect: "postgres",
     dialectModule: pg,
     dialectOptions: {
       ssl: {
         require: true,
-        rejectUnauthorized: false,
-      },
-    },
+        rejectUnauthorized: false
+      }
+    }
   });
 } else {
-  sequelize = new Sequelize (
-    config.database, 
-    config.username, 
+  sequelize = new Sequelize(
+    config.database,
+    config.username,
     config.password,
-    {
-      ...config,
-      dialectModule: pg
-    }
+    config
   );
 }
-
 
 fs
   .readdirSync(__dirname)
