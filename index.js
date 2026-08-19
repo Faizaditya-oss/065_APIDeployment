@@ -1,5 +1,5 @@
 const express = require("express");
-const connectDatabase = require("./config/db");
+const db = require("./models");
 
 const app = express();
 
@@ -13,7 +13,10 @@ app.use(async (req, res, next) => {
   try {
     if (!databaseReady) {
       if (!databasePromise) {
-        databasePromise = connectDatabase();
+        databasePromise = (async () => {
+          await db.sequelize.authenticate();
+          await db.sequelize.sync();
+        })();
       }
 
       await databasePromise;
