@@ -14,12 +14,17 @@ let sequelize;
 if (config.use_env_variable) {
   const connectionUrl = process.env[config.use_env_variable];
 
+  if (!connectionUrl) {
+    throw new Error(`Environment variable ${config.use_env_variable} is missing. Please set it in Vercel.`);
+  }
+
   const url = new URL(connectionUrl);
 
   url.searchParams.delete('sslmode');
 
   sequelize = new Sequelize(url.toString(), {
     dialect: config.dialect,
+    dialectModule: pg,
     dialectOptions: {
       ssl: {
         require: true,
@@ -32,8 +37,11 @@ if (config.use_env_variable) {
     config.database, 
     config.username, 
     config.password,
-    config
-    );
+    {
+      ...config,
+      dialectModule: pg
+    }
+  );
 }
 
 

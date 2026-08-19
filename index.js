@@ -1,22 +1,49 @@
 const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
+const db = require('./models');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/api', require('./routes/api'));
+let databaseReady = false;
+let databasePromise = null;
 
-// Local development
-if (require.main === module) {
-    const db = require('./models');
-    db.sequelize.authenticate().then(() => {
-        app.listen(PORT, () => {
-            console.log(`Server is running on http://localhost:${PORT}`);
-        });
-    }).catch(err => {
-        console.error('Unable to connect to the database:', err);
-    });
+async function connectToDatabase() {
+    try {
+        await db.sequelize.authenticate();
+        console.log('Database connected successfully.');
+    } catch (error) {
+        console.error('Unable to connect to the database:', error);
+        throw error;
+    }
 }
 
+app.use(async (req, res, next) => {
+    try{
+        if (!databaseReady) {
+            if (!databasePromise) {
+                databasePromise = connectToDatabase();
+            }
+            await databasePromise;
+            databaseReady = true;
+        }
+        next();
+    } catch (error) {
+        console.error('Error connecting to database:', error.message);
+        databasePromise = null;
+        return res.status(500).json({ 
+            message: 'Database Connection Error' 
+        });
+    }
+});
+
+app.use('/api', require('./routes/api'));
+
 module.exports = app;
+
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server is running on http://localhost:${PORT}`);
+    });
+}
